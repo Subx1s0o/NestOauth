@@ -1,5 +1,6 @@
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -12,14 +13,12 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleAuthRedirect(
+  async googleAuthRedirect(
     @Req() req: Request & { user: any },
     @Res() res: Response,
   ) {
     const user = req.user;
-
-    console.log(user);
-    return true;
+    return res.json({ user });
   }
 
   @Get('linkedin')
@@ -33,8 +32,20 @@ export class AuthController {
     @Res() res: Response,
   ) {
     const user = req.user;
+    return res.json({ user });
+  }
 
-    console.log(user);
-    return true;
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  async authWithGithub(@Req() req: Request) {}
+
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  async githubInAuthRedirect(
+    @Req() req: Request & { user: any },
+    @Res() res: Response,
+  ) {
+    const user = req.user;
+    return res.json({ user });
   }
 }

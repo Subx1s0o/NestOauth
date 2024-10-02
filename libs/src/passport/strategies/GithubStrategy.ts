@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-linkedin-oauth2';
+import { Strategy } from 'passport-github2';
 
 @Injectable()
-export default class LinkedinStrategy extends PassportStrategy(
+export default class GithubStrategy extends PassportStrategy(
   Strategy,
-  'linkedin',
+  'github',
 ) {
   constructor(private readonly config: ConfigService) {
     super({
-      clientID: config.get('LINKEDIN_ID'),
-      clientSecret: config.get('LINKEDIN_SECRET'),
-      callbackURL: config.get('LINKEDIN_REDIRECT'),
-      scope: ['email', 'profile', 'openid'],
+      clientID: config.get('GITHUB_ID'),
+      clientSecret: config.get('GITHUB_SECRET'),
+      callbackURL: config.get('GITHUB_REDIRECT'),
+      scope: ['user:email'],
     });
   }
 
