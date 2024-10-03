@@ -1,6 +1,8 @@
 import { PrismaService } from '@libs/prisma/prisma.service,';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
+import { AuthResponse, Tokens, UserRequest } from './types';
 
 @Injectable()
 export class AuthService {
@@ -9,7 +11,7 @@ export class AuthService {
     private readonly JwtService: JwtService,
   ) {}
 
-  generateTokens(user_data) {
+  generateTokens(user_data: User): Tokens {
     const accessToken = this.JwtService.sign(
       {
         sub: user_data.id,
@@ -30,19 +32,16 @@ export class AuthService {
     };
   }
 
-  async verifyAndOAuth(data) {
+  async verifyAndOAuth(user_data: UserRequest): Promise<AuthResponse> {
     const user = await this.prisma.user.findUnique({
-      where: { email: data.email },
+      where: { email: user_data.email },
     });
 
     if (!user) {
       const userData = {
-        email: data.email,
-        name: data.displayName,
-        avatar:
-          Array.isArray(data.photos) && data.photos.length > 0
-            ? data.photos[0].value
-            : '',
+        email: user_data.email,
+        name: user_data.displayName,
+        avatar: user_data.picture || '',
         isVerified: true,
       };
       const createdUser = await this.prisma.user.create({ data: userData });

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-linkedin-oauth2';
+import { LinkedInProfile } from 'types';
 
 @Injectable()
 export default class LinkedinStrategy extends PassportStrategy(
@@ -17,7 +18,11 @@ export default class LinkedinStrategy extends PassportStrategy(
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any) {
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: LinkedInProfile,
+  ) {
     return profile;
   }
 }
