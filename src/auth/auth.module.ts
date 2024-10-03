@@ -1,5 +1,5 @@
 import { PassportModule } from '@libs/passport/passport.module';
-import { PrismaService } from '@libs/prisma/prisma.service,';
+import { PrismaService } from '@libs/prisma/prisma.service';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';

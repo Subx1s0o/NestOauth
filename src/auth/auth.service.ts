@@ -1,8 +1,14 @@
-import { PrismaService } from '@libs/prisma/prisma.service,';
-import { Injectable } from '@nestjs/common';
+import { PrismaService } from '@libs/prisma/prisma.service';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
-import { AuthResponse, Tokens, UserRequest } from './types';
+import { GoogleProfile, LinkedInProfile } from 'types';
+import { LoginUser, RegisterUser } from './dto';
+import { AuthResponse, RefreshToken, Tokens } from './types';
 
 @Injectable()
 export class AuthService {
@@ -11,7 +17,7 @@ export class AuthService {
     private readonly JwtService: JwtService,
   ) {}
 
-  generateTokens(user_data: User): Tokens {
+  private generateTokens(user_data: User): Tokens {
     const accessToken = this.JwtService.sign(
       {
         sub: user_data.id,
@@ -32,7 +38,7 @@ export class AuthService {
     };
   }
 
-  async verifyAndOAuth(user_data: UserRequest): Promise<AuthResponse> {
+  async GoogleAuth(user_data: GoogleProfile): Promise<AuthResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: user_data.email },
     });
@@ -40,40 +46,133 @@ export class AuthService {
     if (!user) {
       const userData = {
         email: user_data.email,
-        name: user_data.displayName,
+        name: user_data.given_name,
+        surname: user_data.family_name || null,
         avatar: user_data.picture || '',
-        isVerified: true,
       };
       const createdUser = await this.prisma.user.create({ data: userData });
-
       const tokens = this.generateTokens(createdUser);
 
       return {
-        avatar: createdUser.avatar,
-        name: createdUser.name,
-        email: createdUser.email,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        createdAt: createdUser.createdAt,
-        updatedAt: createdUser.updatedAt,
+        data: {
+          ...createdUser,
+        },
+        ...tokens,
       };
     }
 
     const tokens = this.generateTokens(user);
 
     return {
-      avatar: user.avatar,
-      name: user.name,
-      email: user.email,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      data: {
+        ...user,
+      },
+      ...tokens,
     };
   }
 
-  async SignupLocal() {}
-  async SigninLocal() {}
-  async LogoutLocal() {}
-  async RefreshTokens() {}
+  async LinkedinAuth(user_data: LinkedInProfile): Promise<AuthResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: user_data.email },
+    });
+
+    if (!user) {
+      const userData = {
+        email: user_data.email,
+        name: user_data.givenName,
+        surname: user_data.familyName || null,
+        avatar: user_data.picture || '',
+      };
+      const createdUser = await this.prisma.user.create({ data: userData });
+      const tokens = this.generateTokens(createdUser);
+
+      return {
+        data: {
+          ...createdUser,
+        },
+        ...tokens,
+      };
+    }
+
+    const tokens = this.generateTokens(user);
+
+    return {
+      data: {
+        ...user,
+      },
+      ...tokens,
+    };
+  }
+
+  async signupLocal(auth_data: RegisterUser): Promise<AuthResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: auth_data.email },
+    });
+
+    if (user) {
+      throw new ConflictException('The User already exists');
+    }
+
+    const createdUser = await this.prisma.user.create({ data: auth_data });
+    const tokens = this.generateTokens(createdUser);
+
+    return {
+      data: {
+        ...createdUser,
+      },
+      ...tokens,
+    };
+  }
+
+  async signinLocal(auth_data: LoginUser): Promise<AuthResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: auth_data.email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const tokens = this.generateTokens(user);
+
+    return {
+      data: {
+        ...user,
+      },
+      ...tokens,
+    };
+  }
+
+  async logoutLocal() {}
+
+  async refreshTokens({ refreshToken }: RefreshToken) {
+    try {
+      const payload = await this.JwtService.verify(refreshToken);
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+      if (!user) throw new BadRequestException('User not found');
+      const tokens = this.generateTokens(user);
+      return tokens;
+    } catch (error) {
+      throw new BadRequestException('Invalid refresh token');
+    }
+  }
+
+  async isLogged({ refreshToken }: RefreshToken) {
+    try {
+      const payload = await this.JwtService.verify(refreshToken);
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+      if (!user) throw new BadRequestException('User not found');
+      return {
+        isLogged: true,
+      };
+    } catch (e) {
+      return {
+        isLogged: false,
+      };
+    }
+  }
 }

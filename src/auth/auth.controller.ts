@@ -1,12 +1,47 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  InternalServerErrorException,
+  Logger,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { GoogleProfile, LinkedInProfile } from 'types';
 import { AuthService } from './auth.service';
+import { LoginUser, RegisterUser } from './dto';
+import { AuthResponse, RefreshToken, Tokens } from './types';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  logger: Logger;
+  constructor(private readonly authService: AuthService) {
+    this.logger = new Logger(AuthController.name);
+  }
+
+  private async RedirectWithCookie(
+    accessToken: string,
+    refreshToken: string,
+    res: Response,
+  ) {
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: false,
+      maxAge: 1000 * 60 * 20,
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    });
+
+    return res.redirect('http://localhost:3000');
+  }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -18,21 +53,17 @@ export class AuthController {
     @Req() req: Request & { user: GoogleProfile },
     @Res() res: Response,
   ) {
-    const user = await this.authService.verifyAndOAuth(req.user);
-
-    res.cookie('accessToken', user.accessToken, {
-      httpOnly: true,
-      secure: false,
-      maxAge: 1000 * 60 * 20,
-    });
-
-    res.cookie('refreshToken', user.refreshToken, {
-      httpOnly: true,
-      secure: false,
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-    });
-
-    return res.redirect('http://localhost:3000');
+    try {
+      const { accessToken, refreshToken } = await this.authService.GoogleAuth(
+        req.user,
+      );
+      await this.RedirectWithCookie(accessToken, refreshToken, res);
+    } catch (error) {
+      this.logger.error('Error while Google Authorization: ', error);
+      throw new InternalServerErrorException(
+        'Something Went Wrong, try again later.',
+      );
+    }
   }
 
   @Get('linkedin')
@@ -45,32 +76,38 @@ export class AuthController {
     @Req() req: Request & { user: LinkedInProfile },
     @Res() res: Response,
   ) {
-    const user = await this.authService.verifyAndOAuth(req.user);
-
-    res.cookie('accessToken', user.accessToken, {
-      httpOnly: true,
-      secure: false,
-      maxAge: 1000 * 60 * 20,
-    });
-
-    res.cookie('refreshToken', user.refreshToken, {
-      httpOnly: true,
-      secure: false,
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-    });
-
-    return res.redirect('http://localhost:3000');
+    try {
+      const { accessToken, refreshToken } = await this.authService.LinkedinAuth(
+        req.user,
+      );
+      await this.RedirectWithCookie(accessToken, refreshToken, res);
+    } catch (error) {
+      this.logger.error('Error while Google Authorization: ', error);
+      throw new InternalServerErrorException(
+        'Something Went Wrong, try again later.',
+      );
+    }
   }
 
   @Post('local/signup')
-  async Signup() {}
+  async Signup(@Body() data: RegisterUser): Promise<AuthResponse> {
+    return await this.authService.signupLocal(data);
+  }
 
   @Post('local/signin')
-  async Signin() {}
-
+  async Signin(@Body() data: LoginUser): Promise<AuthResponse> {
+    return await this.authService.signinLocal(data);
+  }
   @Post('local/logout')
-  async Logout() {}
+  async Logout(@Body() data) {}
 
-  @Post('local/refresh')
-  async Refresh() {}
+  @Post('refresh')
+  async Refresh(@Body() token: RefreshToken): Promise<Tokens> {
+    return await this.authService.refreshTokens(token);
+  }
+
+  @Post('logged')
+  async isLogged(@Body() token: RefreshToken): Promise<{ isLogged: boolean }> {
+    return await this.authService.isLogged(token);
+  }
 }

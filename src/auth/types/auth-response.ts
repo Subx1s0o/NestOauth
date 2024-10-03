@@ -1,9 +1,11 @@
 export type AuthResponse = {
-  avatar: string;
-  name: string;
-  email: string;
+  data: {
+    avatar: string;
+    name: string;
+    email: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
   accessToken: string;
   refreshToken: string;
-  createdAt: Date;
-  updatedAt: Date;
 };
