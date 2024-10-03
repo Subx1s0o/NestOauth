@@ -1,9 +1,8 @@
-import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { GoogleProfile, LinkedInProfile } from 'types';
 import { AuthService } from './auth.service';
-import { AuthResponse } from './types';
 
 @Controller('auth')
 export class AuthController {
@@ -17,8 +16,23 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(
     @Req() req: Request & { user: GoogleProfile },
-  ): Promise<AuthResponse> {
-    return await this.authService.verifyAndOAuth(req.user);
+    @Res() res: Response,
+  ) {
+    const user = await this.authService.verifyAndOAuth(req.user);
+
+    res.cookie('accessToken', user.accessToken, {
+      httpOnly: true,
+      secure: false,
+      maxAge: 1000 * 60 * 20,
+    });
+
+    res.cookie('refreshToken', user.refreshToken, {
+      httpOnly: true,
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    });
+
+    return res.redirect('http://localhost:3000');
   }
 
   @Get('linkedin')
@@ -29,8 +43,23 @@ export class AuthController {
   @UseGuards(AuthGuard('linkedin'))
   async linkedInAuthRedirect(
     @Req() req: Request & { user: LinkedInProfile },
-  ): Promise<AuthResponse> {
-    return await this.authService.verifyAndOAuth(req.user);
+    @Res() res: Response,
+  ) {
+    const user = await this.authService.verifyAndOAuth(req.user);
+
+    res.cookie('accessToken', user.accessToken, {
+      httpOnly: true,
+      secure: false,
+      maxAge: 1000 * 60 * 20,
+    });
+
+    res.cookie('refreshToken', user.refreshToken, {
+      httpOnly: true,
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    });
+
+    return res.redirect('http://localhost:3000');
   }
 
   @Post('local/signup')
