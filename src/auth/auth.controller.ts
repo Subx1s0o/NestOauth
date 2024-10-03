@@ -1,4 +1,4 @@
-import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -9,7 +9,7 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  async authWithGoogle(@Req() req: Request) {}
+  async authWithGoogle() {}
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
@@ -17,13 +17,13 @@ export class AuthController {
     @Req() req: Request & { user: any },
     @Res() res: Response,
   ) {
-    const user = req.user;
-    return res.json({ user });
+    const user = await this.authService.verifyAndOAuth(req.user);
+    return res.json(user);
   }
 
   @Get('linkedin')
   @UseGuards(AuthGuard('linkedin'))
-  async authWithLinkedIn(@Req() req: Request) {}
+  async authWithLinkedIn() {}
 
   @Get('linkedin/callback')
   @UseGuards(AuthGuard('linkedin'))
@@ -31,21 +31,19 @@ export class AuthController {
     @Req() req: Request & { user: any },
     @Res() res: Response,
   ) {
-    const user = req.user;
-    return res.json({ user });
+    const user = await this.authService.verifyAndOAuth(req.user);
+    return res.json(user);
   }
 
-  @Get('github')
-  @UseGuards(AuthGuard('github'))
-  async authWithGithub(@Req() req: Request) {}
+  @Post('local/signup')
+  async Signup() {}
 
-  @Get('github/callback')
-  @UseGuards(AuthGuard('github'))
-  async githubInAuthRedirect(
-    @Req() req: Request & { user: any },
-    @Res() res: Response,
-  ) {
-    const user = req.user;
-    return res.json({ user });
-  }
+  @Post('local/signin')
+  async Signin() {}
+
+  @Post('local/logout')
+  async Logout() {}
+
+  @Post('local/refresh')
+  async Refresh() {}
 }
