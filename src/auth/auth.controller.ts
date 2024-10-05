@@ -28,19 +28,20 @@ export class AuthController {
     refreshToken: string,
     res: Response,
   ) {
+    this.logger.log('Setting cookies: ', accessToken, refreshToken); // Логування значень
     res.cookie('accessToken', accessToken, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 24 * 7,
     });
 
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
-    return res.redirect('http://localhost:3000');
+    return res.redirect(`${process.env.FRONT_URL}`); // Використовуйте HTTPS
   }
 
   @Get('google')
