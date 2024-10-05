@@ -28,19 +28,18 @@ export class AuthController {
     refreshToken: string,
     res: Response,
   ) {
-    this.logger.log('Setting cookies: ', accessToken, refreshToken); // Логування значень
     res.cookie('accessToken', accessToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 24 * 7,
     });
 
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
-
+    this.logger.debug('REDIRECTIMG HERE', process.env.FRONT_URL);
     return res.redirect(`${process.env.FRONT_URL}`); // Використовуйте HTTPS
   }
 
