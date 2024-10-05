@@ -148,13 +148,17 @@ export class AuthService {
   async refreshTokens({ refreshToken }: RefreshToken) {
     try {
       const payload = await this.JwtService.verify(refreshToken);
+
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
       });
+
       if (!user) throw new BadRequestException('User not found');
       const tokens = this.generateTokens(user);
+
       return tokens;
     } catch (error) {
+      console.log(error);
       throw new BadRequestException('Invalid refresh token');
     }
   }

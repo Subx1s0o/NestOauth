@@ -29,13 +29,13 @@ export class AuthController {
     res: Response,
   ) {
     res.cookie('accessToken', accessToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false,
-      maxAge: 1000 * 60 * 20,
+      maxAge: 1000 * 60 * 24 * 7,
     });
 
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false,
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
@@ -82,7 +82,7 @@ export class AuthController {
       );
       await this.RedirectWithCookie(accessToken, refreshToken, res);
     } catch (error) {
-      this.logger.error('Error while Google Authorization: ', error);
+      this.logger.error('Error while Linkedin Authorization: ', error);
       throw new InternalServerErrorException(
         'Something Went Wrong, try again later.',
       );
@@ -98,8 +98,6 @@ export class AuthController {
   async Signin(@Body() data: LoginUser): Promise<AuthResponse> {
     return await this.authService.signinLocal(data);
   }
-  @Post('local/logout')
-  async Logout(@Body() data) {}
 
   @Post('refresh')
   async Refresh(@Body() token: RefreshToken): Promise<Tokens> {
