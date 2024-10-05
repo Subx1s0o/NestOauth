@@ -30,13 +30,13 @@ export class AuthController {
   ) {
     res.cookie('accessToken', accessToken, {
       httpOnly: false,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 24 * 7,
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: false,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
